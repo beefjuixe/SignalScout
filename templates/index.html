@@ -3,432 +3,87 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Fabrikam SignalScout</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
-              mono: ["IBM Plex Mono", "ui-monospace", "SFMono-Regular", "monospace"],
-            },
-            boxShadow: {
-              glow: "0 0 24px rgba(16, 185, 129, 0.45)",
-              card: "0 18px 40px -24px rgba(15, 23, 42, 0.45)",
-            },
-          },
-        },
-      };
-    </script>
+    <title>SignalScout — Signals worth acting on</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <style>
-      html,
-      body {
-        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-      }
-      .agent-pulse {
-        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-        animation: agent-pulse 2s infinite;
-      }
-      @keyframes agent-pulse {
-        0% {
-          box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-        }
-        70% {
-          box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
-        }
-        100% {
-          box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
-        }
-      }
-      .terminal-scroll::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-      }
-      .terminal-scroll::-webkit-scrollbar-thumb {
-        background: #475569;
-        border-radius: 999px;
-      }
-      .grid-bg {
-        background-image: radial-gradient(rgba(99, 102, 241, 0.08) 1px, transparent 1px);
-        background-size: 22px 22px;
-      }
-    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    {% include "styles.html" %}
   </head>
-  <body class="min-h-screen bg-slate-100 text-slate-900 grid-bg">
-    <div id="toast-root" class="pointer-events-none fixed right-4 top-4 z-50 flex flex-col gap-2"></div>
-
-    <header class="border-b border-slate-200/80 bg-white/90 backdrop-blur-md">
-      <div class="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-        <div class="flex items-start gap-3">
-          <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-600 text-lg text-white shadow-card">
-            📡
-          </div>
-          <div>
-            <div class="flex flex-wrap items-center gap-3">
-              <h1 class="text-xl font-extrabold tracking-tight text-slate-900">Fabrikam SignalScout</h1>
-              <span
-                class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 shadow-glow"
-              >
-                <span class="agent-pulse inline-block h-2 w-2 rounded-full bg-emerald-500"></span>
-                🤖 AI Agent: Online
-              </span>
-            </div>
-            <p class="mt-1 text-sm text-slate-500">Commercial AE Territory Scout — 150 Monitored Accounts</p>
-          </div>
-        </div>
-        <button
-          id="weekly-digest-btn"
-          type="button"
-          class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-card transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2"
-        >
-          🚀 Push Weekly Digest to Slack
-        </button>
-      </div>
+  <body>
+    <header class="site-header">
+      <nav class="wrap nav" aria-label="Main navigation">
+        <a class="brand" href="/" aria-label="SignalScout home"><span class="brand-icon" aria-hidden="true">✳</span><span>signal<span class="brand-light">scout</span><span class="brand-period">.</span></span></a>
+        <div class="nav-right"><a class="button button-primary" href="#login">Sign in <span aria-hidden="true">↗</span></a></div>
+      </nav>
     </header>
 
-    <main class="mx-auto max-w-7xl px-5 py-6">
-      <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <section class="lg:col-span-1">
-          <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-card">
-            <div class="mb-4 flex items-center justify-between">
-              <h2 class="text-sm font-bold uppercase tracking-wide text-slate-700">
-                🔥 High Priority Targets (Top 5 This Week)
-              </h2>
-              <span id="account-count" class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500">0</span>
-            </div>
-            <div id="account-list" class="space-y-3">
-              <div class="animate-pulse rounded-xl border border-slate-100 bg-slate-50 p-4 text-sm text-slate-400">
-                Agent scanning territory…
-              </div>
-            </div>
+    <main>
+      <section class="landing-hero grid-paper">
+        <div class="wrap landing-grid">
+          <div class="landing-copy">
+            <p class="eyebrow"><span class="eyebrow-line"></span> THE SIGNAL, NOT THE NOISE</p>
+            <h1>Know who<br />to call <em>next.</em></h1>
+            <p class="landing-description">Your territory is moving. SignalScout connects the executive changes, buying signals, and warm introductions that turn a list of accounts into your next conversation.</p>
+            <a class="button button-primary" href="#login">Open your workspace <span aria-hidden="true">↗</span></a>
+            <div class="hero-footnote mono"><span class="live-dot"></span> 12,480 ACCOUNTS MONITORED</div>
           </div>
-        </section>
-
-        <section class="lg:col-span-2">
-          <div class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
-            <div
-              id="workspace-loader"
-              class="pointer-events-none absolute inset-0 z-10 hidden items-center justify-center bg-white/70 backdrop-blur-[2px]"
-            >
-              <div class="flex items-center gap-3 rounded-full border border-indigo-100 bg-white px-4 py-2 shadow-card">
-                <span class="h-4 w-4 animate-spin rounded-full border-2 border-indigo-200 border-t-indigo-600"></span>
-                <span class="text-sm font-medium text-indigo-700">AI agent fetching context…</span>
-              </div>
+          <div class="diagram-card" aria-label="Diagram showing signals flowing into an account briefing">
+            <div class="diagram-top mono"><span>FIG. 01 / SIGNAL FLOW</span></div>
+            <div class="diagram-content">
+              <div class="diagram-input"><span class="diagram-symbol">↗</span><span>Executive<br />moves</span><span class="mono diagram-index">01</span></div>
+              <div class="diagram-input"><span class="diagram-symbol">⌁</span><span>Buying<br />signals</span><span class="mono diagram-index">02</span></div>
+              <div class="diagram-input"><span class="diagram-symbol">◎</span><span>Warm<br />paths</span><span class="mono diagram-index">03</span></div>
+              <div class="diagram-connector" aria-hidden="true"><span></span><span></span><span></span></div>
+              <div class="diagram-output"><span class="mono">YOUR NEXT MOVE / 001</span><strong>One clear<br />way in<span class="brand-period">.</span></strong><span class="diagram-arrow" aria-hidden="true">↗</span></div>
             </div>
-
-            <h2 class="mb-4 text-sm font-bold uppercase tracking-wide text-slate-700">Actionable Account Workspace</h2>
-
-            <article id="exec-profile" class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Executive Profile</p>
-              <h3 id="lead-name" class="mt-1 text-2xl font-bold text-slate-900">Select an account</h3>
-              <p id="lead-meta" class="mt-1 text-sm text-slate-500"></p>
-              <div id="lead-focus" class="mt-3 flex flex-wrap gap-2"></div>
-            </article>
-
-            <article class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-              <div class="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p class="text-xs font-semibold uppercase tracking-wider text-emerald-700">Warm Path Bridge</p>
-                  <h3 id="warm-contact" class="mt-1 text-lg font-bold text-emerald-950">—</h3>
-                </div>
-                <span
-                  id="warm-score"
-                  class="inline-flex items-center rounded-full bg-emerald-700 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white"
-                >
-                  —
-                </span>
-              </div>
-              <p id="warm-overlap" class="mt-3 text-sm leading-relaxed text-emerald-900"></p>
-            </article>
-
-            <div class="mt-4">
-              <div class="flex gap-2 border-b border-slate-200">
-                <button
-                  type="button"
-                  data-tab="intro_request"
-                  class="outreach-tab -mb-px border-b-2 border-indigo-600 px-3 py-2 text-sm font-semibold text-indigo-700"
-                >
-                  Forwardable Intro Request
-                </button>
-                <button
-                  type="button"
-                  data-tab="direct_technical"
-                  class="outreach-tab -mb-px border-b-2 border-transparent px-3 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800"
-                >
-                  Direct Technical Outreach
-                </button>
-              </div>
-              <pre
-                id="outreach-copy"
-                class="mt-3 max-h-64 overflow-auto whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-950 p-4 font-mono text-xs leading-relaxed text-slate-100"
-              ></pre>
-              <div class="mt-3 flex flex-wrap gap-2">
-                <button
-                  id="copy-draft-btn"
-                  type="button"
-                  class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                >
-                  📋 Copy Draft to Clipboard
-                </button>
-                <button
-                  id="push-alert-btn"
-                  type="button"
-                  class="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
-                >
-                  ✉️ Push Alert to Slack
-                </button>
-              </div>
-            </div>
+            <div class="diagram-bottom mono"><span>INPUT → INSIGHT → ACTION</span><span>SCOUT ENGINE / V1.0</span></div>
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
 
-      <section class="mt-6">
-        <div class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-card">
-          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700 px-4 py-3">
-            <div>
-              <h2 class="text-sm font-bold text-slate-100">⚡ MCP Execution Trace Log</h2>
-              <p class="text-xs text-slate-400">Agent Orchestration Engine</p>
-            </div>
-            <button
-              id="toggle-trace-btn"
-              type="button"
-              class="rounded-lg border border-slate-600 bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-100 hover:bg-slate-700"
-            >
-              Toggle Raw Execution Trace
-            </button>
+      <section class="value-band">
+        <div class="wrap value-grid">
+          <div><span class="mono value-number">12,480</span><span class="mono value-label">ACCOUNTS MONITORED</span></div>
+          <div><span class="mono value-number">5</span><span class="mono value-label">PRIORITIES THIS WEEK</span></div>
+          <div><span class="mono value-number">48,920</span><span class="mono value-label">SIGNALS ANALYZED</span></div>
+        </div>
+      </section>
+
+      <section class="login-section grid-paper" id="login">
+        <div class="wrap login-grid">
+          <div class="login-intro">
+            <p class="eyebrow"><span class="eyebrow-line"></span> YOUR WORKSPACE AWAITS</p>
+            <h2>Less digging.<br /><span class="accent-text">More doing.</span></h2>
+            <p>Five accounts worth your week, with the context and outreach ready when you are.</p>
+            <div class="login-note mono">01 / IDENTIFY &nbsp; → &nbsp; 02 / PRIORITIZE &nbsp; → &nbsp; 03 / CONNECT</div>
           </div>
-          <div id="mcp-trace" class="terminal-scroll max-h-72 overflow-auto p-4 font-mono text-xs leading-6 text-slate-100"></div>
+          <div class="login-card">
+            <div class="card-top mono"><span>ACCESS / SIGNALSCOUT</span><span>↗</span></div>
+            <h3>Welcome back<span class="brand-period">.</span></h3>
+            <p>Sign in to your territory briefing.</p>
+            <form id="login-form">
+              <label for="username">Username</label>
+              <input id="username" name="username" type="text" autocomplete="username" placeholder="Your username" required />
+              <label for="password">Password</label>
+              <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Your password" required />
+              <button type="submit" class="button button-primary login-submit">Enter workspace <span aria-hidden="true">↗</span></button>
+            </form>
+            <p class="login-help mono">DEMO ACCESS / ANY USERNAME + PASSWORD</p>
+          </div>
         </div>
       </section>
     </main>
-
+    <footer class="footer"><div class="wrap footer-inner"><span class="brand">signal<span class="brand-light">scout</span><span class="brand-period">.</span></span><span class="mono">BUILT FOR THE MOMENT THAT MATTERS. © FABRIKAM</span></div></footer>
     <script>
-      const state = {
-        accounts: [],
-        activeId: null,
-        detail: null,
-        outreachTab: "intro_request",
-        rawTrace: false,
-      };
-
-      const els = {
-        accountList: document.getElementById("account-list"),
-        accountCount: document.getElementById("account-count"),
-        loader: document.getElementById("workspace-loader"),
-        leadName: document.getElementById("lead-name"),
-        leadMeta: document.getElementById("lead-meta"),
-        leadFocus: document.getElementById("lead-focus"),
-        warmContact: document.getElementById("warm-contact"),
-        warmScore: document.getElementById("warm-score"),
-        warmOverlap: document.getElementById("warm-overlap"),
-        outreachCopy: document.getElementById("outreach-copy"),
-        mcpTrace: document.getElementById("mcp-trace"),
-        toastRoot: document.getElementById("toast-root"),
-      };
-
-      function showToast(message, ok = true) {
-        const toast = document.createElement("div");
-        toast.className = `pointer-events-auto rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-card ${
-          ok ? "bg-emerald-600" : "bg-rose-600"
-        }`;
-        toast.textContent = message;
-        els.toastRoot.appendChild(toast);
-        setTimeout(() => toast.remove(), 3200);
-      }
-
-      function setLoading(isLoading) {
-        els.loader.classList.toggle("hidden", !isLoading);
-        els.loader.classList.toggle("flex", isLoading);
-      }
-
-      function escapeHtml(value) {
-        return String(value)
-          .replaceAll("&", "&amp;")
-          .replaceAll("<", "&lt;")
-          .replaceAll(">", "&gt;")
-          .replaceAll('"', "&quot;");
-      }
-
-      function renderAccountCards() {
-        els.accountCount.textContent = String(state.accounts.length);
-        els.accountList.innerHTML = state.accounts
-          .map((account) => {
-            const active = account.id === state.activeId;
-            const cardClass = active
-              ? "border-indigo-500 bg-indigo-50 shadow-card"
-              : "border-slate-200 bg-white hover:border-indigo-200 hover:bg-slate-50";
-            const badges = (account.badges || [])
-              .map(
-                (badge) =>
-                  `<span class="rounded-full bg-orange-50 px-2 py-0.5 text-[11px] font-semibold text-orange-700">${escapeHtml(
-                    badge
-                  )}</span>`
-              )
-              .join("");
-            return `
-              <button type="button" data-account-id="${escapeHtml(account.id)}"
-                class="w-full rounded-xl border p-4 text-left transition ${cardClass}">
-                <div class="flex items-start justify-between gap-2">
-                  <h3 class="font-bold text-slate-900">${escapeHtml(account.name)}</h3>
-                  ${active ? '<span class="text-[10px] font-bold uppercase tracking-wide text-indigo-600">Active</span>' : ""}
-                </div>
-                <p class="mt-1 text-xs text-slate-500">${escapeHtml(account.industry)} · ${escapeHtml(account.size)}</p>
-                <div class="mt-2 flex flex-wrap gap-1">${badges}</div>
-                <p class="mt-3 text-sm font-medium text-slate-700">
-                  ${escapeHtml(account.target_lead?.name || "—")} — ${escapeHtml(account.target_lead?.title || "")}
-                </p>
-              </button>
-            `;
-          })
-          .join("");
-
-        els.accountList.querySelectorAll("[data-account-id]").forEach((btn) => {
-          btn.addEventListener("click", () => selectAccount(btn.dataset.accountId));
-        });
-      }
-
-      function renderWorkspace(detail) {
-        const lead = detail.target_lead || {};
-        els.leadName.textContent = `${lead.name || "Unknown"} · ${lead.title || ""}`;
-        els.leadMeta.textContent = `${lead.tenure || ""} · Prev: ${lead.previous_role || "—"}`;
-        els.leadFocus.innerHTML = (lead.focus_areas || [])
-          .map(
-            (area) =>
-              `<span class="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200">${escapeHtml(
-                area
-              )}</span>`
-          )
-          .join("");
-
-        const warm = detail.warm_path || {};
-        els.warmContact.textContent = `${warm.internal_contact || "—"} — ${warm.internal_title || ""}`;
-        const score = typeof warm.score === "number" ? warm.score.toFixed(2) : warm.score;
-        els.warmScore.textContent = `${warm.score_label || "SCORE"} (${score})`;
-        els.warmOverlap.textContent = warm.relationship_overlap || "";
-
-        const copy = detail.outreach?.[state.outreachTab] || "";
-        els.outreachCopy.textContent = copy;
-        renderTrace(detail.mcp_trace || []);
-      }
-
-      function renderTrace(trace) {
-        if (state.rawTrace) {
-          els.mcpTrace.innerHTML = `<pre class="whitespace-pre-wrap text-slate-300">${escapeHtml(
-            JSON.stringify(trace, null, 2)
-          )}</pre>`;
+      document.getElementById("login-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const username = document.getElementById("username").value.trim();
+        if (!username || !document.getElementById("password").value) {
+          document.getElementById("login-form").reportValidity();
           return;
         }
-
-        els.mcpTrace.innerHTML = trace
-          .map((row) => {
-            const params = escapeHtml(JSON.stringify(row.params || {}));
-            return `
-              <div class="border-b border-slate-800/80 py-1.5">
-                <span class="text-slate-500">[${escapeHtml(row.timestamp || "")}]</span>
-                <span class="text-amber-300"> ${escapeHtml(row.step || "")}</span>
-                <span class="text-cyan-300"> ${escapeHtml(row.tool || "")}</span>
-                <span class="text-slate-400"> ${params}</span>
-                <div class="text-emerald-300">↳ ${escapeHtml(row.result || "")}</div>
-              </div>
-            `;
-          })
-          .join("");
-      }
-
-      async function selectAccount(accountId) {
-        state.activeId = accountId;
-        state.outreachTab = "intro_request";
-        document.querySelectorAll(".outreach-tab").forEach((tab) => {
-          const on = tab.dataset.tab === "intro_request";
-          tab.classList.toggle("border-indigo-600", on);
-          tab.classList.toggle("text-indigo-700", on);
-          tab.classList.toggle("border-transparent", !on);
-          tab.classList.toggle("text-slate-500", !on);
-        });
-        renderAccountCards();
-        setLoading(true);
-        const started = Date.now();
-        try {
-          const res = await fetch("/api/accounts/" + accountId);
-          if (!res.ok) throw new Error("Failed to load account");
-          state.detail = await res.json();
-          const wait = Math.max(0, 300 - (Date.now() - started));
-          await new Promise((resolve) => setTimeout(resolve, wait));
-          renderWorkspace(state.detail);
-        } catch (err) {
-          showToast(err.message || "Unable to load account", false);
-        } finally {
-          setLoading(false);
-        }
-      }
-
-      async function pushToSlack(accountId) {
-        if (!accountId) return;
-        try {
-          const res = await fetch(`/api/slack/push/${accountId}`, { method: "POST" });
-          const payload = await res.json();
-          if (!res.ok) throw new Error(payload.detail || "Slack push failed");
-          showToast(payload.message || "Pushed signal briefing to Slack!");
-        } catch (err) {
-          showToast(err.message || "Slack push failed", false);
-        }
-      }
-
-      document.querySelectorAll(".outreach-tab").forEach((tab) => {
-        tab.addEventListener("click", () => {
-          state.outreachTab = tab.dataset.tab;
-          document.querySelectorAll(".outreach-tab").forEach((btn) => {
-            const on = btn.dataset.tab === state.outreachTab;
-            btn.classList.toggle("border-indigo-600", on);
-            btn.classList.toggle("text-indigo-700", on);
-            btn.classList.toggle("border-transparent", !on);
-            btn.classList.toggle("text-slate-500", !on);
-          });
-          if (state.detail) {
-            els.outreachCopy.textContent = state.detail.outreach?.[state.outreachTab] || "";
-          }
-        });
-      });
-
-      document.getElementById("copy-draft-btn").addEventListener("click", async () => {
-        const text = els.outreachCopy.textContent || "";
-        try {
-          await navigator.clipboard.writeText(text);
-          showToast("Draft copied to clipboard");
-        } catch {
-          showToast("Could not copy draft", false);
-        }
-      });
-
-      document.getElementById("push-alert-btn").addEventListener("click", () => pushToSlack(state.activeId));
-      document.getElementById("weekly-digest-btn").addEventListener("click", () => pushToSlack(state.activeId));
-      document.getElementById("toggle-trace-btn").addEventListener("click", () => {
-        state.rawTrace = !state.rawTrace;
-        renderTrace(state.detail?.mcp_trace || []);
-      });
-
-      document.addEventListener("DOMContentLoaded", async () => {
-        try {
-          const res = await fetch("/api/accounts");
-          if (!res.ok) throw new Error("Failed to load accounts");
-          state.accounts = await res.json();
-          renderAccountCards();
-          const defaultId =
-            state.accounts.find((account) => account.id === "rayquaza_cloud")?.id || state.accounts[0]?.id;
-          if (defaultId) await selectAccount(defaultId);
-        } catch (err) {
-          els.accountList.innerHTML =
-            '<p class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">Unable to reach SignalScout API.</p>';
-          showToast(err.message || "Failed to load accounts", false);
-        }
+        sessionStorage.setItem("signalScoutUser", username);
+        window.location.assign("/dashboard");
       });
     </script>
   </body>

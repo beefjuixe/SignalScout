@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Workspace — SignalScout</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    {% include "styles.html" %}
+    <script>
+      if (!sessionStorage.getItem("signalScoutUser")) window.location.replace("/");
+    </script>
+  </head>
+  <body>
+    <div id="toast-root" class="toasts" role="status" aria-live="polite"></div>
+    <header class="site-header">
+      <nav class="wrap nav" aria-label="Workspace navigation">
+        <a class="brand" href="/dashboard"><span class="brand-icon" aria-hidden="true">✳</span><span>signal<span class="brand-light">scout</span><span class="brand-period">.</span></span></a>
+        <div class="nav-right"><button id="sign-out-btn" type="button" class="button button-primary">Sign out <span aria-hidden="true">↗</span></button></div>
+      </nav>
+    </header>
+
+    <main class="grid-paper">
+      <section class="dashboard-hero">
+        <div class="wrap dashboard-hero-inner">
+          <div>
+            <p class="eyebrow"><span class="eyebrow-line"></span> FABRIKAM / COMMERCIAL AE TERRITORY</p>
+            <h1>Your week, <span class="accent-text">in focus.</span></h1>
+            <p>Five accounts worth your attention. Every signal has a next step.</p>
+          </div>
+          <div class="dashboard-meta mono">WORKSPACE / <span id="current-user"></span><strong>TOP <span id="top-count">—</span></strong>PRIORITY ACCOUNTS</div>
+        </div>
+      </section>
+
+      <div class="wrap">
+        <div class="dashboard-stats" aria-label="Territory overview">
+          <div><strong>12,480</strong><span>ACCOUNTS MONITORED</span></div>
+          <div><strong id="priority-count">—</strong><span>PRIORITIES THIS WEEK</span></div>
+          <div><strong>48,920</strong><span>SIGNALS ANALYZED</span></div>
+        </div>
+      </div>
+
+      <div class="workspace">
+        <div class="wrap workspace-grid">
+          <aside class="list-panel" aria-label="High priority targets">
+            <div class="panel-head"><div><p class="label muted">01 / THE SHORTLIST</p><h2>Priority accounts</h2></div><span id="account-count" class="tag">0</span></div>
+            <div id="account-list" class="account-list"><p class="placeholder">Agent scanning territory…</p></div>
+          </aside>
+
+          <section class="detail" aria-label="Actionable account workspace">
+            <div id="workspace-loader" class="loader" role="status"><span class="loader-box"></span><span class="label">AGENT FETCHING CONTEXT…</span></div>
+            <div class="detail-head"><p class="label">02 / ACCOUNT BRIEFING</p></div>
+            <article id="exec-profile">
+              <p class="label muted profile-label">EXECUTIVE PROFILE</p>
+              <h2 id="lead-name" class="lead-name">Select an account</h2>
+              <p id="lead-title" class="lead-title"></p>
+              <p id="lead-meta" class="lead-meta"></p>
+              <div id="lead-focus" class="lead-focus"></div>
+            </article>
+            <article class="section bridge">
+              <p class="label">THE WARM WAY IN</p>
+              <h3 id="warm-contact" class="bridge-contact">—</h3>
+              <p id="warm-overlap" class="bridge-overlap"></p>
+            </article>
+            <section class="section" aria-label="Outreach drafts">
+              <p class="label muted">03 / MAKE THE MOVE</p>
+              <h3 class="section-heading">Outreach, already drafted.</h3>
+              <div class="tabs" role="tablist" aria-label="Outreach drafts">
+                <button id="tab-intro" type="button" role="tab" aria-controls="outreach-copy" aria-selected="true" data-tab="intro_request" class="outreach-tab tab">Forwardable intro request</button>
+                <button id="tab-direct" type="button" role="tab" aria-controls="outreach-copy" aria-selected="false" data-tab="direct_technical" class="outreach-tab tab">Direct technical outreach</button>
+              </div>
+              <pre id="outreach-copy" class="draft" role="tabpanel" aria-labelledby="tab-intro" tabindex="0"></pre>
+              <div class="actions">
+                <button id="push-alert-btn" type="button" class="button button-primary">Push alert to Slack <span aria-hidden="true">↗</span></button>
+                <button id="copy-draft-btn" type="button" class="button button-outline">Copy draft <span aria-hidden="true">↗</span></button>
+              </div>
+            </section>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <section class="trace-section">
+      <div class="wrap">
+        <div class="trace-head"><div><p class="label muted">UNDER THE HOOD / AGENT ORCHESTRATION</p><h2>Execution trace</h2></div><div class="actions"><button id="weekly-digest-btn" type="button" class="button button-outline">Push weekly digest to Slack <span aria-hidden="true">↗</span></button><button id="toggle-trace-btn" type="button" class="button button-outline" aria-pressed="false">Show raw trace <span aria-hidden="true">↗</span></button></div></div>
+        <div id="mcp-trace" class="trace-panel" tabindex="0"></div>
+      </div>
+    </section>
+    <footer class="footer"><div class="wrap footer-inner"><span class="brand">signal<span class="brand-light">scout</span><span class="brand-period">.</span></span><span class="mono">FABRIKAM / 12,480 MONITORED ACCOUNTS</span></div></footer>
+
+    <script>
+      const state = {
+        accounts: [],
+        activeId: null,
+        detail: null,
+        outreachTab: "intro_request",
+        rawTrace: false,
+        requestId: 0,
+      };
+
+      const els = {
+        accountList: document.getElementById("account-list"),
+        accountCount: document.getElementById("account-count"),
+        loader: document.getElementById("workspace-loader"),
+        leadName: document.getElementById("lead-name"),
+        leadTitle: document.getElementById("lead-title"),
+        leadMeta: document.getElementById("lead-meta"),
+        leadFocus: document.getElementById("lead-focus"),
+        warmContact: document.getElementById("warm-contact"),
+        warmOverlap: document.getElementById("warm-overlap"),
+        outreachCopy: document.getElementById("outreach-copy"),
+        mcpTrace: document.getElementById("mcp-trace"),
+        toastRoot: document.getElementById("toast-root"),
+      };
+
+      document.getElementById("current-user").textContent = sessionStorage.getItem("signalScoutUser") || "";
+      document.getElementById("sign-out-btn").addEventListener("click", () => {
+        sessionStorage.removeItem("signalScoutUser");
+        window.location.assign("/");
+      });
+
+      function showToast(message, ok = true) {
+        const toast = document.createElement("div");
+        toast.className = "toast";
+        const tag = document.createElement("span");
+        tag.className = "label";
+        tag.textContent = ok ? "Done" : "Error";
+        const text = document.createElement("span");
+        text.textContent = message;
+        toast.append(tag, text);
+        els.toastRoot.appendChild(toast);
+        setTimeout(() => toast.remove(), 3200);
+      }
+
+      function setLoading(isLoading) {
+        els.loader.classList.toggle("is-active", isLoading);
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;");
+      }
+
+      function setActiveTab(tabId) {
+        document.querySelectorAll(".outreach-tab").forEach((tab) => {
+          tab.setAttribute("aria-selected", String(tab.dataset.tab === tabId));
+        });
+        els.outreachCopy.setAttribute("aria-labelledby", tabId === "intro_request" ? "tab-intro" : "tab-direct");
+      }
+
+      function renderAccountCards() {
+        els.accountCount.textContent = String(state.accounts.length);
+        document.getElementById("priority-count").textContent = String(state.accounts.length);
+        document.getElementById("top-count").textContent = String(state.accounts.length);
+        els.accountList.innerHTML = state.accounts
+          .map((account, index) => {
+            const active = account.id === state.activeId;
+            const badges = (account.badges || [])
+              .map((badge) => `<span class="tag tag-quiet">${escapeHtml(badge.replace(/^\p{Extended_Pictographic}\uFE0F?\s*/u, ""))}</span>`)
+              .join("");
+            return `
+              <button type="button" class="account" data-account-id="${escapeHtml(account.id)}"
+                ${active ? 'aria-current="true"' : ""}>
+                <div class="account-top">
+                  <h3 class="account-name"><span class="mono muted">${String(index + 1).padStart(2, "0")} / </span>${escapeHtml(account.name)}</h3>
+                </div>
+                <p class="account-meta">${escapeHtml(account.industry)} · ${escapeHtml(account.size)}</p>
+                <div class="account-badges">${badges}</div>
+                <p class="account-lead"><strong>${escapeHtml(account.target_lead?.name || "—")}</strong> — ${escapeHtml(account.target_lead?.title || "")}</p>
+              </button>
+            `;
+          })
+          .join("");
+        els.accountList.querySelectorAll("[data-account-id]").forEach((btn) => {
+          btn.addEventListener("click", () => selectAccount(btn.dataset.accountId));
+        });
+      }
+
+      function renderWorkspace(detail) {
+        const lead = detail.target_lead || {};
+        els.leadName.textContent = lead.name || "Unknown";
+        els.leadTitle.textContent = lead.title || "";
+        els.leadMeta.textContent = `${lead.tenure || ""} · Prev: ${lead.previous_role || "—"}`;
+        els.leadFocus.innerHTML = (lead.focus_areas || [])
+          .map((area) => `<span class="tag">${escapeHtml(area)}</span>`)
+          .join("");
+        const warm = detail.warm_path || {};
+        els.warmContact.textContent = `${warm.internal_contact || "—"} — ${warm.internal_title || ""}`;
+        els.warmOverlap.textContent = warm.relationship_overlap || "";
+        els.outreachCopy.textContent = detail.outreach?.[state.outreachTab] || "";
+        renderTrace(detail.mcp_trace || []);
+      }
+
+      function renderTrace(trace) {
+        if (state.rawTrace) {
+          els.mcpTrace.innerHTML = `<pre class="trace-raw">${escapeHtml(JSON.stringify(trace, null, 2))}</pre>`;
+          return;
+        }
+        els.mcpTrace.innerHTML = trace
+          .map((row) => {
+            const params = escapeHtml(JSON.stringify(row.params || {}));
+            return `
+              <div class="trace-row">
+                <span class="trace-time">${escapeHtml(row.timestamp || "")}</span>
+                <span class="trace-step">${escapeHtml(row.step || "")}</span>
+                <span><span class="trace-tool">${escapeHtml(row.tool || "")}</span><span class="trace-params">${params}</span></span>
+                <span class="trace-result">↳ ${escapeHtml(row.result || "")}</span>
+              </div>
+            `;
+          })
+          .join("");
+      }
+
+      async function selectAccount(accountId) {
+        const requestId = ++state.requestId;
+        state.activeId = accountId;
+        state.detail = null;
+        state.outreachTab = "intro_request";
+        setActiveTab("intro_request");
+        renderAccountCards();
+        setLoading(true);
+        try {
+          const res = await fetch("/api/accounts/" + encodeURIComponent(accountId));
+          if (!res.ok) throw new Error("Failed to load account");
+          const detail = await res.json();
+          if (requestId !== state.requestId) return;
+          state.detail = detail;
+          renderWorkspace(detail);
+        } catch (err) {
+          if (requestId === state.requestId) showToast(err.message || "Unable to load account", false);
+        } finally {
+          if (requestId === state.requestId) setLoading(false);
+        }
+      }
+
+      async function pushToSlack(accountId) {
+        if (!accountId) {
+          showToast("Select an account first", false);
+          return;
+        }
+        try {
+          const res = await fetch(`/api/slack/push/${encodeURIComponent(accountId)}`, { method: "POST" });
+          const payload = await res.json();
+          if (!res.ok) throw new Error(payload.detail || "Slack push failed");
+          showToast(payload.message || "Pushed signal briefing to Slack!");
+        } catch (err) {
+          showToast(err.message || "Slack push failed", false);
+        }
+      }
+
+      document.querySelectorAll(".outreach-tab").forEach((tab) => {
+        tab.addEventListener("click", () => {
+          state.outreachTab = tab.dataset.tab;
+          setActiveTab(state.outreachTab);
+          if (state.detail) els.outreachCopy.textContent = state.detail.outreach?.[state.outreachTab] || "";
+        });
+      });
+      document.getElementById("copy-draft-btn").addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(els.outreachCopy.textContent || "");
+          showToast("Draft copied to clipboard");
+        } catch {
+          showToast("Could not copy draft", false);
+        }
+      });
+      document.getElementById("push-alert-btn").addEventListener("click", () => pushToSlack(state.activeId));
+      document.getElementById("weekly-digest-btn").addEventListener("click", () => pushToSlack(state.activeId));
+      document.getElementById("toggle-trace-btn").addEventListener("click", (event) => {
+        state.rawTrace = !state.rawTrace;
+        event.currentTarget.setAttribute("aria-pressed", String(state.rawTrace));
+        event.currentTarget.firstChild.textContent = state.rawTrace ? "Show formatted trace " : "Show raw trace ";
+        renderTrace(state.detail?.mcp_trace || []);
+      });
+
+      document.addEventListener("DOMContentLoaded", async () => {
+        try {
+          const res = await fetch("/api/accounts");
+          if (!res.ok) throw new Error("Failed to load accounts");
+          state.accounts = await res.json();
+          renderAccountCards();
+          const defaultId = state.accounts.find((account) => account.id === "rayquaza_cloud")?.id || state.accounts[0]?.id;
+          if (defaultId) await selectAccount(defaultId);
+        } catch (err) {
+          els.accountList.innerHTML = '<p class="placeholder">Unable to reach SignalScout API.</p>';
+          showToast(err.message || "Failed to load accounts", false);
+        }
+      });
+    </script>
+  </body>
+</html>
