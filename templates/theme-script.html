@@ -1,0 +1,29 @@
+<script>
+  (function () {
+    var key = "signalScoutTheme";
+    function currentTheme() {
+      return document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+    }
+    function applyTheme(theme) {
+      document.documentElement.setAttribute("data-theme", theme);
+      try {
+        localStorage.setItem(key, theme);
+      } catch (err) {}
+      document.querySelectorAll("[data-theme-toggle]").forEach(function (btn) {
+        var dark = theme === "dark";
+        btn.setAttribute("aria-pressed", String(dark));
+        btn.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
+        var sun = btn.querySelector(".icon-sun");
+        var moon = btn.querySelector(".icon-moon");
+        if (sun) sun.toggleAttribute("hidden", dark);
+        if (moon) moon.toggleAttribute("hidden", !dark);
+      });
+    }
+    applyTheme(currentTheme());
+    document.querySelectorAll("[data-theme-toggle]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        applyTheme(currentTheme() === "dark" ? "light" : "dark");
+      });
+    });
+  })();
+</script>

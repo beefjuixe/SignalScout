@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ title }} — SignalScout</title>
     {% include "favicon.html" %}
+    {% include "theme-init.html" %}
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -14,6 +15,7 @@
     <header class="site-header">
       <nav class="wrap nav" aria-label="Main navigation">
         <a class="brand" href="/dashboard"><span class="brand-icon" aria-hidden="true">✳</span><span>signal<span class="brand-light">scout</span><span class="brand-period">.</span></span></a>
+        <div class="nav-right">{% include "theme-toggle.html" %}</div>
       </nav>
     </header>
     <main class="login-section">
@@ -26,5 +28,6 @@
         </p>
       </div>
     </main>
+    {% include "theme-script.html" %}
   </body>
 </html>

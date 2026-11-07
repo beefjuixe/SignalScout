@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Workspace — SignalScout</title>
     {% include "favicon.html" %}
+    {% include "theme-init.html" %}
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -19,6 +20,7 @@
       <nav class="wrap nav" aria-label="Workspace navigation">
         <a class="brand" href="/dashboard"><span class="brand-icon" aria-hidden="true">✳</span><span>signal<span class="brand-light">scout</span><span class="brand-period">.</span></span></a>
         <div class="nav-right">
+          {% include "theme-toggle.html" %}
           <button id="digest-slack-btn" type="button" class="button button-outline header-digest">
             <span class="slack-mark" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M6 15a2 2 0 1 1-2-2h2v2zm1 0a2 2 0 0 1 2-2h5v-1a2 2 0 1 1 2 2v1h1a2 2 0 1 1-2 2h-1v5a2 2 0 1 1-2-2v-5H9a2 2 0 0 1-2-2zm8-8a2 2 0 1 1 2 2h-2V7zm-1 0a2 2 0 0 1-2 2H7V8a2 2 0 1 1-2-2h1V1a2 2 0 1 1 2 2v5h5a2 2 0 0 1 2 2z"/></svg>
@@ -443,5 +445,6 @@
         }
       });
     </script>
+    {% include "theme-script.html" %}
   </body>
 </html>
