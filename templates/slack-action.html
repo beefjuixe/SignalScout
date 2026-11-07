@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ title }} — SignalScout</title>
+    {% include "favicon.html" %}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    {% include "styles.html" %}
+  </head>
+  <body class="grid-paper">
+    <header class="site-header">
+      <nav class="wrap nav" aria-label="Main navigation">
+        <a class="brand" href="/dashboard"><span class="brand-icon" aria-hidden="true">✳</span><span>signal<span class="brand-light">scout</span><span class="brand-period">.</span></span></a>
+      </nav>
+    </header>
+    <main class="login-section">
+      <div class="wrap" style="max-width: 640px;">
+        <p class="eyebrow"><span class="eyebrow-line"></span> SLACK ACTION COMPLETE</p>
+        <h1 class="login-intro" style="font-size: 40px; margin: 24px 0;">{{ headline }}</h1>
+        <p style="color: var(--steel); font-size: 18px; line-height: 1.4;">{{ body }}</p>
+        <p style="margin-top: 32px;">
+          <a class="button button-primary" href="/dashboard?account={{ account_id }}">Open briefing <span aria-hidden="true">↗</span></a>
+        </p>
+      </div>
+    </main>
+  </body>
+</html>

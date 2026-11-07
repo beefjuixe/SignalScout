@@ -23,6 +23,8 @@ async def favicon():
 
 SLACK_WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL", "").strip()
 SLACK_CHANNEL = os.getenv("SLACK_CHANNEL", "#ae-west-signals").strip()
+APP_BASE_URL = os.getenv("APP_BASE_URL", "").strip().rstrip("/")
+CRM_SYSTEM = os.getenv("CRM_SYSTEM", "HubSpot")
 
 
 def _trace(ts: str, step: str, tool: str, params: dict, result: str) -> dict:
@@ -276,8 +278,18 @@ I can send a 1-pager on tenant isolation and break-glass for clinical apps — e
 }
 
 
+def account_status(account: dict) -> dict:
+    account.setdefault("claimed_by", None)
+    account.setdefault("claimed_at", None)
+    account.setdefault("crm_synced", False)
+    account.setdefault("crm_synced_at", None)
+    account.setdefault("crm_system", None)
+    return account
+
+
 def account_summary(account: dict) -> dict:
     lead = account["target_lead"]
+    status = account_status(account)
     return {
         "id": account["id"],
         "name": account["name"],
@@ -285,6 +297,45 @@ def account_summary(account: dict) -> dict:
         "size": account["size"],
         "badges": account["badges"],
         "target_lead": {"name": lead["name"], "title": lead["title"]},
+        "claimed_by": status.get("claimed_by"),
+        "crm_synced": status.get("crm_synced", False),
+    }
+
+
+def public_base_url(request: Request) -> str:
+    if APP_BASE_URL:
+        return APP_BASE_URL
+    return str(request.base_url).rstrip("/")
+
+
+def slack_action_buttons(account_id: str, base_url: str) -> dict:
+    return {
+        "type": "actions",
+        "block_id": f"scout_actions_{account_id}",
+        "elements": [
+            {
+                "type": "button",
+                "text": {"type": "plain_text", "text": "Claim Account", "emoji": True},
+                "style": "primary",
+                "action_id": "claim_account",
+                "value": account_id,
+                "url": f"{base_url}/slack/claim/{account_id}",
+            },
+            {
+                "type": "button",
+                "text": {"type": "plain_text", "text": "Push to CRM", "emoji": True},
+                "action_id": "push_crm",
+                "value": account_id,
+                "url": f"{base_url}/slack/crm/{account_id}",
+            },
+            {
+                "type": "button",
+                "text": {"type": "plain_text", "text": "Ask Scout", "emoji": True},
+                "action_id": "ask_scout",
+                "value": account_id,
+                "url": f"{base_url}/dashboard?account={account_id}&ask=1",
+            },
+        ],
     }
 
 
@@ -308,7 +359,7 @@ async def get_account(account_id: str):
     account = ACCOUNTS.get(account_id)
     if not account:
         raise HTTPException(status_code=404, detail="Account not found")
-    return account
+    return account_status(account)
 
 
 class ChatRequest(BaseModel):
@@ -359,13 +410,16 @@ async def chat(payload: ChatRequest):
     return {"answer": answer_question(account, payload.question.strip())}
 
 
-def slack_briefing_payload(account: dict) -> dict:
+def slack_briefing_payload(account: dict, base_url: str) -> dict:
     lead = account["target_lead"]
     warm = account["warm_path"]
     badges = ", ".join(account["badges"])
     intro = account["outreach"]["intro_request"].strip()
-    if len(intro) > 900:
-        intro = intro[:900].rstrip() + "…"
+    if len(intro) > 700:
+        intro = intro[:700].rstrip() + "…"
+    status = account_status(account)
+    claim_line = f"Claimed by {status['claimed_by']}" if status.get("claimed_by") else "Unclaimed"
+    crm_line = f"Synced to {status.get('crm_system') or CRM_SYSTEM}" if status.get("crm_synced") else "Not in CRM"
     text = (
         f"SignalScout briefing: {account['name']} — {lead['name']}, {lead['title']}. "
         f"Warm path: {warm['internal_contact']} ({warm['score_label']})."
@@ -390,32 +444,152 @@ def slack_briefing_payload(account: dict) -> dict:
                             f" ({warm['score_label']} {warm['score']:.2f})"
                         ),
                     },
+                    {"type": "mrkdwn", "text": f"*Ownership*\n{claim_line}"},
+                    {"type": "mrkdwn", "text": f"*CRM*\n{crm_line}"},
                 ],
             },
             {"type": "section", "text": {"type": "mrkdwn", "text": f"*Context*\n{warm['relationship_overlap']}"}},
             {"type": "divider"},
             {"type": "section", "text": {"type": "mrkdwn", "text": f"*Forwardable intro*\n```{intro}```"}},
+            slack_action_buttons(account["id"], base_url),
+            {
+                "type": "context",
+                "elements": [
+                    {
+                        "type": "mrkdwn",
+                        "text": (
+                            "Claim updates SignalScout ownership. Push to CRM syncs this briefing. "
+                            "Ask Scout opens a follow-up thread in your workspace."
+                        ),
+                    }
+                ],
+            },
         ],
     }
 
 
-@app.post("/api/slack/push/{account_id}")
-async def push_slack(account_id: str):
-    account = ACCOUNTS.get(account_id)
-    if not account:
-        raise HTTPException(status_code=404, detail="Account not found")
+def slack_digest_payload(accounts: list[dict], base_url: str) -> dict:
+    lines = []
+    for index, account in enumerate(accounts, start=1):
+        lead = account["target_lead"]
+        status = account_status(account)
+        owner = f" · claimed by {status['claimed_by']}" if status.get("claimed_by") else ""
+        lines.append(
+            f"*{index}. {account['name']}* — {lead['name']}, {lead['title']}{owner}\n"
+            f"{', '.join(account['badges'])}"
+        )
+    return {
+        "text": f"SignalScout weekly digest — {len(accounts)} priority accounts",
+        "blocks": [
+            {
+                "type": "header",
+                "text": {"type": "plain_text", "text": "SignalScout weekly digest"},
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": "Top accounts this week. Open a briefing in Slack or claim from the buttons below.",
+                },
+            },
+            {"type": "section", "text": {"type": "mrkdwn", "text": "\n\n".join(lines)}},
+            {
+                "type": "actions",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {"type": "plain_text", "text": "Open workspace"},
+                        "url": f"{base_url}/dashboard",
+                    },
+                    {
+                        "type": "button",
+                        "text": {"type": "plain_text", "text": "Ask Scout"},
+                        "url": f"{base_url}/dashboard?ask=1",
+                    },
+                ],
+            },
+        ],
+    }
+
+
+async def post_to_slack(payload: dict) -> None:
     if not SLACK_WEBHOOK_URL:
         raise HTTPException(status_code=500, detail="SLACK_WEBHOOK_URL is not configured")
-    payload = slack_briefing_payload(account)
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.post(SLACK_WEBHOOK_URL, json=payload)
             response.raise_for_status()
     except httpx.HTTPError as exc:
         raise HTTPException(status_code=502, detail=f"Slack webhook failed: {exc}") from exc
+
+
+@app.post("/api/slack/push/{account_id}")
+async def push_slack(account_id: str, request: Request):
+    account = ACCOUNTS.get(account_id)
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+    await post_to_slack(slack_briefing_payload(account, public_base_url(request)))
     return {
         "ok": True,
         "channel": SLACK_CHANNEL,
         "pushed_at": datetime.now(timezone.utc).isoformat(),
         "message": f"Pushed {account['name']} signal briefing to Slack!",
     }
+
+
+@app.post("/api/slack/digest")
+async def push_digest(request: Request):
+    accounts = list(ACCOUNTS.values())
+    await post_to_slack(slack_digest_payload(accounts, public_base_url(request)))
+    return {
+        "ok": True,
+        "channel": SLACK_CHANNEL,
+        "pushed_at": datetime.now(timezone.utc).isoformat(),
+        "message": f"Pushed weekly digest ({len(accounts)} accounts) to Slack!",
+    }
+
+
+@app.get("/slack/claim/{account_id}", response_class=HTMLResponse)
+async def slack_claim(account_id: str, request: Request):
+    account = ACCOUNTS.get(account_id)
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+    status = account_status(account)
+    actor = request.query_params.get("by") or "AE from Slack"
+    status["claimed_by"] = actor
+    status["claimed_at"] = datetime.now(timezone.utc).isoformat()
+    return templates.TemplateResponse(
+        request,
+        "slack-action.html",
+        {
+            "title": "Account claimed",
+            "headline": f"{account['name']} is yours.",
+            "body": f"{actor} claimed this account in SignalScout. Lead status is now Claimed.",
+            "account_id": account_id,
+        },
+    )
+
+
+@app.get("/slack/crm/{account_id}", response_class=HTMLResponse)
+async def slack_push_crm(account_id: str, request: Request):
+    account = ACCOUNTS.get(account_id)
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+    status = account_status(account)
+    status["crm_synced"] = True
+    status["crm_system"] = CRM_SYSTEM
+    status["crm_synced_at"] = datetime.now(timezone.utc).isoformat()
+    lead = account["target_lead"]
+    return templates.TemplateResponse(
+        request,
+        "slack-action.html",
+        {
+            "title": "Pushed to CRM",
+            "headline": f"{account['name']} synced to {CRM_SYSTEM}.",
+            "body": (
+                f"Briefing for {lead['name']}, {lead['title']} is now in {CRM_SYSTEM} "
+                "without opening the dashboard."
+            ),
+            "account_id": account_id,
+        },
+    )
