@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Workspace — SignalScout</title>
+    {% include "favicon.html" %}
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -53,7 +54,7 @@
             <div class="detail-head"><p class="label">02 / ACCOUNT BRIEFING</p></div>
             <article id="exec-profile">
               <p class="label muted profile-label">EXECUTIVE PROFILE</p>
-              <h2 id="lead-name" class="lead-name">Select an account</h2>
+              <h2 id="lead-name" class="lead-name person-line">Select an account</h2>
               <p id="lead-title" class="lead-title"></p>
               <p id="lead-meta" class="lead-meta"></p>
               <div id="lead-focus" class="lead-focus"></div>
@@ -77,14 +78,45 @@
               </div>
             </section>
           </section>
+
+          <aside class="chat-panel" aria-label="Ask SignalScout">
+            <div class="panel-head">
+              <div>
+                <p class="label muted">04 / ASK SCOUT</p>
+                <h2>Follow-up</h2>
+              </div>
+            </div>
+            <p class="chat-intro">Have more questions on this account? Pick a prompt or type your own.</p>
+            <div id="chat-prompts" class="chat-prompts">
+              <button type="button" class="chat-prompt" data-prompt="Why is this account a priority this week?">Why is this account a priority this week?</button>
+              <button type="button" class="chat-prompt" data-prompt="Who is the warm path, and how strong is the relationship?">Who is the warm path, and how strong is the relationship?</button>
+              <button type="button" class="chat-prompt" data-prompt="What should I send first?">What should I send first?</button>
+            </div>
+            <div id="chat-log" class="chat-log" aria-live="polite"></div>
+            <form id="chat-form" class="chat-form">
+              <label class="visually-hidden" for="chat-input">Ask a question</label>
+              <input id="chat-input" name="question" type="text" autocomplete="off" placeholder="Ask about this account…" />
+              <button type="submit" class="button button-primary">Send <span aria-hidden="true">↗</span></button>
+            </form>
+          </aside>
         </div>
       </div>
     </main>
 
     <section class="trace-section">
       <div class="wrap">
-        <div class="trace-head"><div><p class="label muted">UNDER THE HOOD / AGENT ORCHESTRATION</p><h2>Execution trace</h2></div><div class="actions"><button id="weekly-digest-btn" type="button" class="button button-outline">Push weekly digest to Slack <span aria-hidden="true">↗</span></button><button id="toggle-trace-btn" type="button" class="button button-outline" aria-pressed="false">Show raw trace <span aria-hidden="true">↗</span></button></div></div>
-        <div id="mcp-trace" class="trace-panel" tabindex="0"></div>
+        <div class="trace-head">
+          <div>
+            <p class="label muted">UNDER THE HOOD / AGENT ORCHESTRATION</p>
+            <h2>Execution trace</h2>
+          </div>
+          <div class="actions">
+            <button id="weekly-digest-btn" type="button" class="button button-outline">Push weekly digest to Slack <span aria-hidden="true">↗</span></button>
+            <button id="download-trace-btn" type="button" class="button button-outline">Download MCP trace <span aria-hidden="true">↗</span></button>
+            <button id="toggle-trace-btn" type="button" class="button button-outline" aria-expanded="false">Show execution trace <span aria-hidden="true">↗</span></button>
+          </div>
+        </div>
+        <div id="mcp-trace" class="trace-panel is-collapsed" hidden></div>
       </div>
     </section>
     <footer class="footer"><div class="wrap footer-inner"><span class="brand">signal<span class="brand-light">scout</span><span class="brand-period">.</span></span><span class="mono">FABRIKAM / 12,480 MONITORED ACCOUNTS</span></div></footer>
@@ -95,7 +127,7 @@
         activeId: null,
         detail: null,
         outreachTab: "intro_request",
-        rawTrace: false,
+        traceOpen: false,
         requestId: 0,
       };
 
@@ -112,6 +144,8 @@
         outreachCopy: document.getElementById("outreach-copy"),
         mcpTrace: document.getElementById("mcp-trace"),
         toastRoot: document.getElementById("toast-root"),
+        chatLog: document.getElementById("chat-log"),
+        chatInput: document.getElementById("chat-input"),
       };
 
       document.getElementById("current-user").textContent = sessionStorage.getItem("signalScoutUser") || "";
@@ -145,6 +179,22 @@
           .replaceAll('"', "&quot;");
       }
 
+      const LINKEDIN_PROFILE = "https://www.linkedin.com/in/rajasekar-s-b7b978181/";
+
+      function linkedInIcon() {
+        return `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>`;
+      }
+
+      function linkedInLink(personName) {
+        if (!personName || personName === "—") return "";
+        return `<a class="linkedin-link" href="${LINKEDIN_PROFILE}" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn profile for ${escapeHtml(personName)}" title="LinkedIn">${linkedInIcon()}</a>`;
+      }
+
+      function linkedInChip(personName) {
+        if (!personName || personName === "—") return "";
+        return `<a class="linkedin-chip" href="${LINKEDIN_PROFILE}" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn profile for ${escapeHtml(personName)}">${linkedInIcon()}<span>LinkedIn</span></a>`;
+      }
+
       function setActiveTab(tabId) {
         document.querySelectorAll(".outreach-tab").forEach((tab) => {
           tab.setAttribute("aria-selected", String(tab.dataset.tab === tabId));
@@ -162,44 +212,54 @@
             const badges = (account.badges || [])
               .map((badge) => `<span class="tag tag-quiet">${escapeHtml(badge.replace(/^\p{Extended_Pictographic}\uFE0F?\s*/u, ""))}</span>`)
               .join("");
+            const leadName = account.target_lead?.name || "—";
             return `
-              <button type="button" class="account" data-account-id="${escapeHtml(account.id)}"
+              <div class="account" role="button" tabindex="0" data-account-id="${escapeHtml(account.id)}"
                 ${active ? 'aria-current="true"' : ""}>
                 <div class="account-top">
                   <h3 class="account-name"><span class="mono muted">${String(index + 1).padStart(2, "0")} / </span>${escapeHtml(account.name)}</h3>
                 </div>
                 <p class="account-meta">${escapeHtml(account.industry)} · ${escapeHtml(account.size)}</p>
                 <div class="account-badges">${badges}</div>
-                <p class="account-lead"><strong>${escapeHtml(account.target_lead?.name || "—")}</strong> — ${escapeHtml(account.target_lead?.title || "")}</p>
-              </button>
+                <p class="account-lead"><span class="person-line"><strong>${escapeHtml(leadName)}</strong>${linkedInLink(leadName)}</span> — ${escapeHtml(account.target_lead?.title || "")}</p>
+              </div>
             `;
           })
           .join("");
-        els.accountList.querySelectorAll("[data-account-id]").forEach((btn) => {
-          btn.addEventListener("click", () => selectAccount(btn.dataset.accountId));
+        els.accountList.querySelectorAll("[data-account-id]").forEach((card) => {
+          card.addEventListener("click", (event) => {
+            if (event.target.closest("a")) return;
+            selectAccount(card.dataset.accountId);
+          });
+          card.addEventListener("keydown", (event) => {
+            if (event.target.closest("a")) return;
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              selectAccount(card.dataset.accountId);
+            }
+          });
         });
       }
 
       function renderWorkspace(detail) {
         const lead = detail.target_lead || {};
-        els.leadName.textContent = lead.name || "Unknown";
+        const leadName = lead.name || "Unknown";
+        els.leadName.innerHTML = `${escapeHtml(leadName)}${linkedInLink(leadName)}`;
         els.leadTitle.textContent = lead.title || "";
         els.leadMeta.textContent = `${lead.tenure || ""} · Prev: ${lead.previous_role || "—"}`;
         els.leadFocus.innerHTML = (lead.focus_areas || [])
           .map((area) => `<span class="tag">${escapeHtml(area)}</span>`)
           .join("");
         const warm = detail.warm_path || {};
-        els.warmContact.textContent = `${warm.internal_contact || "—"} — ${warm.internal_title || ""}`;
+        const warmName = warm.internal_contact || "—";
+        els.warmContact.innerHTML = `<span class="bridge-name">${escapeHtml(warmName)}</span>${linkedInChip(warmName)}<span class="bridge-role">${escapeHtml(warm.internal_title || "")}</span>`;
         els.warmOverlap.textContent = warm.relationship_overlap || "";
         els.outreachCopy.textContent = detail.outreach?.[state.outreachTab] || "";
         renderTrace(detail.mcp_trace || []);
+        resetChat(detail);
       }
 
       function renderTrace(trace) {
-        if (state.rawTrace) {
-          els.mcpTrace.innerHTML = `<pre class="trace-raw">${escapeHtml(JSON.stringify(trace, null, 2))}</pre>`;
-          return;
-        }
         els.mcpTrace.innerHTML = trace
           .map((row) => {
             const params = escapeHtml(JSON.stringify(row.params || {}));
@@ -269,11 +329,68 @@
       });
       document.getElementById("push-alert-btn").addEventListener("click", () => pushToSlack(state.activeId));
       document.getElementById("weekly-digest-btn").addEventListener("click", () => pushToSlack(state.activeId));
+      document.getElementById("download-trace-btn").addEventListener("click", () => {
+        const trace = state.detail?.mcp_trace;
+        if (!trace) {
+          showToast("Select an account first", false);
+          return;
+        }
+        const blob = new Blob([JSON.stringify(trace, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `${state.activeId || "account"}-mcp-trace.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+        showToast("MCP trace downloaded");
+      });
       document.getElementById("toggle-trace-btn").addEventListener("click", (event) => {
-        state.rawTrace = !state.rawTrace;
-        event.currentTarget.setAttribute("aria-pressed", String(state.rawTrace));
-        event.currentTarget.firstChild.textContent = state.rawTrace ? "Show formatted trace " : "Show raw trace ";
-        renderTrace(state.detail?.mcp_trace || []);
+        state.traceOpen = !state.traceOpen;
+        els.mcpTrace.hidden = !state.traceOpen;
+        els.mcpTrace.classList.toggle("is-collapsed", !state.traceOpen);
+        event.currentTarget.setAttribute("aria-expanded", String(state.traceOpen));
+        event.currentTarget.firstChild.textContent = state.traceOpen ? "Hide execution trace " : "Show execution trace ";
+      });
+
+      function appendChat(role, text) {
+        const bubble = document.createElement("div");
+        bubble.className = `chat-msg chat-msg-${role}`;
+        bubble.textContent = text;
+        els.chatLog.appendChild(bubble);
+        els.chatLog.scrollTop = els.chatLog.scrollHeight;
+      }
+
+      function resetChat(detail) {
+        const name = detail?.name || "this account";
+        els.chatLog.innerHTML = "";
+        appendChat("agent", `Ask me more about ${name}. Choose a prompt or type a question.`);
+      }
+
+      async function sendChat(question) {
+        const text = (question || "").trim();
+        if (!text) return;
+        appendChat("user", text);
+        els.chatInput.value = "";
+        try {
+          const res = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question: text, account_id: state.activeId }),
+          });
+          const payload = await res.json();
+          if (!res.ok) throw new Error(payload.detail || "Chat failed");
+          appendChat("agent", payload.answer);
+        } catch (err) {
+          appendChat("agent", err.message || "I could not answer that just now.");
+        }
+      }
+
+      document.querySelectorAll(".chat-prompt").forEach((btn) => {
+        btn.addEventListener("click", () => sendChat(btn.dataset.prompt));
+      });
+      document.getElementById("chat-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        sendChat(els.chatInput.value);
       });
 
       document.addEventListener("DOMContentLoaded", async () => {

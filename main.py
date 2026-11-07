@@ -1,12 +1,28 @@
+import os
 from datetime import datetime, timezone
 
+import httpx
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel, Field
 from starlette.requests import Request
+
+load_dotenv()
 
 app = FastAPI(title="Fabrikam SignalScout")
 templates = Jinja2Templates(directory="templates")
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return FileResponse("static/favicon.svg", media_type="image/svg+xml")
+
+SLACK_WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL", "").strip()
+SLACK_CHANNEL = os.getenv("SLACK_CHANNEL", "#ae-west-signals").strip()
 
 
 def _trace(ts: str, step: str, tool: str, params: dict, result: str) -> dict:
@@ -295,14 +311,111 @@ async def get_account(account_id: str):
     return account
 
 
+class ChatRequest(BaseModel):
+    question: str = Field(min_length=1)
+    account_id: str | None = None
+
+
+def answer_question(account: dict | None, question: str) -> str:
+    q = question.lower()
+    if not account:
+        return "Select an account on the left and I can brief you on the lead, the warm path, and the first move."
+
+    lead = account["target_lead"]
+    warm = account["warm_path"]
+    badges = ", ".join(account["badges"])
+    name = account["name"]
+
+    if any(word in q for word in ("priorit", "why", "signal", "this week", "badge")):
+        return (
+            f"{name} is on this week's shortlist because of {badges}. "
+            f"The buying motion sits with {lead['name']}, {lead['title']} ({lead['tenure']}). "
+            f"Previously: {lead['previous_role']}."
+        )
+    if any(word in q for word in ("warm", "intro", "relationship", "path", "connect", "internal")):
+        score = f"{warm['score_label']} ({warm['score']:.2f})"
+        return (
+            f"The warm path is {warm['internal_contact']}, {warm['internal_title']}. "
+            f"Relationship score: {score}. {warm['relationship_overlap']}"
+        )
+    if any(word in q for word in ("send", "outreach", "draft", "email", "first", "message", "slack")):
+        return (
+            f"Start with the forwardable intro — have {warm['internal_contact']} open the door to {lead['name']}. "
+            f"If you need a direct motion, use the technical outreach draft in the briefing. "
+            f"Focus areas: {', '.join(lead['focus_areas'])}."
+        )
+    return (
+        f"{name} / {lead['name']}, {lead['title']}. Tenure: {lead['tenure']}. "
+        f"Warm path: {warm['internal_contact']} ({warm['score_label']}). "
+        f"Ask about the priority, the warm path, or what to send first for a sharper brief."
+    )
+
+
+@app.post("/api/chat")
+async def chat(payload: ChatRequest):
+    account = ACCOUNTS.get(payload.account_id) if payload.account_id else None
+    if payload.account_id and not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+    return {"answer": answer_question(account, payload.question.strip())}
+
+
+def slack_briefing_payload(account: dict) -> dict:
+    lead = account["target_lead"]
+    warm = account["warm_path"]
+    badges = ", ".join(account["badges"])
+    intro = account["outreach"]["intro_request"].strip()
+    if len(intro) > 900:
+        intro = intro[:900].rstrip() + "…"
+    text = (
+        f"SignalScout briefing: {account['name']} — {lead['name']}, {lead['title']}. "
+        f"Warm path: {warm['internal_contact']} ({warm['score_label']})."
+    )
+    return {
+        "text": text,
+        "blocks": [
+            {
+                "type": "header",
+                "text": {"type": "plain_text", "text": f"{account['name']} signal briefing"},
+            },
+            {
+                "type": "section",
+                "fields": [
+                    {"type": "mrkdwn", "text": f"*Lead*\n{lead['name']} — {lead['title']}"},
+                    {"type": "mrkdwn", "text": f"*Tenure*\n{lead['tenure']}"},
+                    {"type": "mrkdwn", "text": f"*Signals*\n{badges}"},
+                    {
+                        "type": "mrkdwn",
+                        "text": (
+                            f"*Warm path*\n{warm['internal_contact']} — {warm['internal_title']}"
+                            f" ({warm['score_label']} {warm['score']:.2f})"
+                        ),
+                    },
+                ],
+            },
+            {"type": "section", "text": {"type": "mrkdwn", "text": f"*Context*\n{warm['relationship_overlap']}"}},
+            {"type": "divider"},
+            {"type": "section", "text": {"type": "mrkdwn", "text": f"*Forwardable intro*\n```{intro}```"}},
+        ],
+    }
+
+
 @app.post("/api/slack/push/{account_id}")
 async def push_slack(account_id: str):
     account = ACCOUNTS.get(account_id)
     if not account:
         raise HTTPException(status_code=404, detail="Account not found")
+    if not SLACK_WEBHOOK_URL:
+        raise HTTPException(status_code=500, detail="SLACK_WEBHOOK_URL is not configured")
+    payload = slack_briefing_payload(account)
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(SLACK_WEBHOOK_URL, json=payload)
+            response.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail=f"Slack webhook failed: {exc}") from exc
     return {
         "ok": True,
-        "channel": "#ae-west-signals",
+        "channel": SLACK_CHANNEL,
         "pushed_at": datetime.now(timezone.utc).isoformat(),
         "message": f"Pushed {account['name']} signal briefing to Slack!",
     }
