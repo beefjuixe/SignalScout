@@ -53,14 +53,14 @@
       <div class="workspace">
         <div class="wrap workspace-grid">
           <aside class="list-panel" aria-label="High priority targets">
-            <div class="panel-head"><div><p class="label muted">01 / THE SHORTLIST</p><h2>Priority accounts</h2></div><span id="account-count" class="tag">0</span></div>
+            <div class="panel-head"><div><p class="label muted">THE SHORTLIST</p><h2>Priority accounts</h2></div><span id="account-count" class="tag">0</span></div>
             <div id="account-list" class="account-list"><p class="placeholder">Agent scanning territory…</p></div>
           </aside>
 
           <section class="detail" aria-label="Actionable account workspace">
             <div id="workspace-loader" class="loader" role="status"><span class="loader-box"></span><span class="label">AGENT FETCHING CONTEXT…</span></div>
             <div class="detail-head">
-              <p class="label">02 / ACCOUNT BRIEFING</p>
+              <p class="label">ACCOUNT BRIEFING</p>
               <button id="send-now-slack-btn" type="button" class="button button-outline send-now">Send Now to Slack <span aria-hidden="true">↗</span></button>
             </div>
             <div id="account-status" class="account-status"></div>
@@ -71,13 +71,18 @@
               <p id="lead-meta" class="lead-meta"></p>
               <div id="lead-focus" class="lead-focus"></div>
             </article>
+            <section id="signal-summary" class="signal-summary" aria-label="Priority signals" hidden>
+              <p class="label muted">PRIORITY SIGNALS</p>
+              <div id="account-signals" class="lead-focus"></div>
+            </section>
             <article class="section bridge">
               <p class="label muted">THE WARM WAY IN</p>
               <h3 id="warm-contact" class="bridge-contact">—</h3>
+              <p id="warm-title" class="bridge-role"></p>
               <p id="warm-overlap" class="bridge-overlap"></p>
             </article>
             <section class="section" aria-label="Outreach drafts">
-              <p class="label muted">03 / MAKE THE MOVE</p>
+              <p class="label muted">MAKE THE MOVE</p>
               <h3 class="section-heading">Outreach, already drafted.</h3>
               <div class="tabs" role="tablist" aria-label="Outreach drafts">
                 <button id="tab-intro" type="button" role="tab" aria-controls="outreach-copy" aria-selected="true" data-tab="intro_request" class="outreach-tab tab">Forwardable intro request</button>
@@ -91,23 +96,33 @@
           </section>
 
           <aside class="chat-panel" aria-label="Ask SignalScout">
-            <div class="panel-head">
-              <div>
-                <p class="label muted">04 / ASK SCOUT</p>
-                <h2>Follow-up</h2>
+            <div class="chat-head">
+              <span class="chat-mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H6l-3 2 1-4.5A7.5 7.5 0 1 1 20 11.5Z"/>
+                  <path d="M8 11h.01M12 11h.01M16 11h.01"/>
+                </svg>
+              </span>
+              <div class="chat-heading">
+                <p class="label muted">ACCOUNT ASSISTANT</p>
+                <h2>Ask Scout</h2>
               </div>
             </div>
-            <p class="chat-intro">Have more questions on this account? Pick a prompt or type your own.</p>
-            <div id="chat-prompts" class="chat-prompts">
-              <button type="button" class="chat-prompt" data-prompt="Why is this account a priority this week?">Why is this account a priority this week?</button>
-              <button type="button" class="chat-prompt" data-prompt="Who is the warm path, and how strong is the relationship?">Who is the warm path, and how strong is the relationship?</button>
-              <button type="button" class="chat-prompt" data-prompt="What should I send first?">What should I send first?</button>
+            <div id="chat-log" class="chat-log" aria-live="polite">
+              <div id="chat-prompts" class="chat-prompts">
+                <p class="chat-suggestions-label label muted">SUGGESTED QUESTIONS</p>
+                <button type="button" class="chat-prompt" data-prompt="Why is this account a priority this week?">Why is this account a priority this week?</button>
+                <button type="button" class="chat-prompt" data-prompt="Who is the warm path, and how strong is the relationship?">Who is the warm path, and how strong is the relationship?</button>
+              </div>
             </div>
-            <div id="chat-log" class="chat-log" aria-live="polite"></div>
             <form id="chat-form" class="chat-form">
               <label class="visually-hidden" for="chat-input">Ask a question</label>
-              <input id="chat-input" name="question" type="text" autocomplete="off" placeholder="Ask about this account…" />
-              <button type="submit" class="button button-primary">Send <span aria-hidden="true">↗</span></button>
+              <input id="chat-input" name="question" type="text" autocomplete="off" placeholder="Ask a question…" />
+              <button type="submit" class="button button-primary chat-submit" aria-label="Send message" title="Send message">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M3 21 22 12 3 3v7l13 2-13 2v7z" />
+                </svg>
+              </button>
             </form>
           </aside>
         </div>
@@ -149,7 +164,10 @@
         leadTitle: document.getElementById("lead-title"),
         leadMeta: document.getElementById("lead-meta"),
         leadFocus: document.getElementById("lead-focus"),
+        signalSummary: document.getElementById("signal-summary"),
+        accountSignals: document.getElementById("account-signals"),
         warmContact: document.getElementById("warm-contact"),
+        warmTitle: document.getElementById("warm-title"),
         warmOverlap: document.getElementById("warm-overlap"),
         outreachCopy: document.getElementById("outreach-copy"),
         mcpTrace: document.getElementById("mcp-trace"),
@@ -200,11 +218,6 @@
         return `<a class="linkedin-link" href="${LINKEDIN_PROFILE}" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn profile for ${escapeHtml(personName)}" title="LinkedIn">${linkedInIcon()}</a>`;
       }
 
-      function linkedInChip(personName) {
-        if (!personName || personName === "—") return "";
-        return `<a class="linkedin-chip" href="${LINKEDIN_PROFILE}" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn profile for ${escapeHtml(personName)}">${linkedInIcon()}<span>LinkedIn</span></a>`;
-      }
-
       function setActiveTab(tabId) {
         document.querySelectorAll(".outreach-tab").forEach((tab) => {
           tab.setAttribute("aria-selected", String(tab.dataset.tab === tabId));
@@ -217,24 +230,16 @@
         document.getElementById("priority-count").textContent = String(state.accounts.length);
         document.getElementById("top-count").textContent = String(state.accounts.length);
         els.accountList.innerHTML = state.accounts
-          .map((account, index) => {
+          .map((account) => {
             const active = account.id === state.activeId;
-            const badges = (account.badges || [])
-              .map((badge) => `<span class="tag tag-quiet">${escapeHtml(badge.replace(/^\p{Extended_Pictographic}\uFE0F?\s*/u, ""))}</span>`)
-              .join("");
             const leadName = account.target_lead?.name || "—";
-            const statusTags = [
-              account.claimed_by ? `<span class="tag">Claimed</span>` : "",
-              account.crm_synced ? `<span class="tag">CRM synced</span>` : "",
-            ].join("");
             return `
               <div class="account" role="button" tabindex="0" data-account-id="${escapeHtml(account.id)}"
                 ${active ? 'aria-current="true"' : ""}>
                 <div class="account-top">
-                  <h3 class="account-name"><span class="mono muted">${String(index + 1).padStart(2, "0")} / </span>${escapeHtml(account.name)}</h3>
+                  <h3 class="account-name">${escapeHtml(account.name)}</h3>
                 </div>
                 <p class="account-meta">${escapeHtml(account.industry)} · ${escapeHtml(account.size)}</p>
-                <div class="account-badges">${badges}${statusTags}</div>
                 <p class="account-lead"><span class="person-line"><strong>${escapeHtml(leadName)}</strong>${linkedInLink(leadName)}</span> — ${escapeHtml(account.target_lead?.title || "")}</p>
               </div>
             `;
@@ -264,9 +269,15 @@
         els.leadFocus.innerHTML = (lead.focus_areas || [])
           .map((area) => `<span class="tag">${escapeHtml(area)}</span>`)
           .join("");
+        const badges = detail.badges || [];
+        els.signalSummary.hidden = badges.length === 0;
+        els.accountSignals.innerHTML = badges
+          .map((badge) => `<span class="tag tag-quiet">${escapeHtml(badge.replace(/^\p{Extended_Pictographic}\uFE0F?\s*/u, ""))}</span>`)
+          .join("");
         const warm = detail.warm_path || {};
         const warmName = warm.internal_contact || "—";
-        els.warmContact.innerHTML = `<span class="bridge-name">${escapeHtml(warmName)}</span>${linkedInChip(warmName)}<span class="bridge-role">${escapeHtml(warm.internal_title || "")}</span>`;
+        els.warmContact.innerHTML = `<span class="bridge-name">${escapeHtml(warmName)}</span>${linkedInLink(warmName)}`;
+        els.warmTitle.textContent = warm.internal_title || "";
         els.warmOverlap.textContent = warm.relationship_overlap || "";
         els.outreachCopy.textContent = detail.outreach?.[state.outreachTab] || "";
         const status = document.getElementById("account-status");
@@ -389,14 +400,16 @@
       }
 
       function resetChat(detail) {
-        const name = detail?.name || "this account";
+        const prompts = document.getElementById("chat-prompts");
         els.chatLog.innerHTML = "";
-        appendChat("agent", `Ask me more about ${name}. Choose a prompt or type a question.`);
+        prompts.hidden = false;
+        els.chatLog.appendChild(prompts);
       }
 
       async function sendChat(question) {
         const text = (question || "").trim();
         if (!text) return;
+        document.getElementById("chat-prompts").hidden = true;
         appendChat("user", text);
         els.chatInput.value = "";
         try {
