@@ -13,10 +13,6 @@
         var dark = theme === "dark";
         btn.setAttribute("aria-pressed", String(dark));
         btn.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
-        var sun = btn.querySelector(".icon-sun");
-        var moon = btn.querySelector(".icon-moon");
-        if (sun) sun.toggleAttribute("hidden", dark);
-        if (moon) moon.toggleAttribute("hidden", !dark);
       });
     }
     applyTheme(currentTheme());

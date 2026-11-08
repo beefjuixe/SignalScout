@@ -139,52 +139,6 @@ If a 25-min architecture working session is useful, I'll keep it engineer-only.
             _trace("14:05:03.918", "draft_generation", "llm.compose_outreach", {"voice": "peer_pm"}, "OK — intro + technical variants"),
         ],
     },
-    "garchomp_defense": {
-        "id": "garchomp_defense",
-        "name": "Garchomp Defense",
-        "industry": "Aerospace & Defense",
-        "size": "8,600 employees · Public",
-        "badges": ["🛡️ CMMC Deadline", "OT/IT Convergence"],
-        "target_lead": {
-            "name": "Cillian Murphy",
-            "title": "CISO",
-            "tenure": "2.4 years in seat",
-            "previous_role": "Head of Cyber, North Atlantic Systems",
-            "focus_areas": ["CMMC L2 evidence", "OT segmentation", "National-cloud landing zone"],
-        },
-        "warm_path": {
-            "internal_contact": "Marcus Cole",
-            "internal_title": "Director, Public Sector Engineering",
-            "relationship_overlap": "Marcus and Cillian served on the same CMMC working group. Marcus can speak evidence packages, not product slogans.",
-            "score_label": "HIGH",
-            "score": 0.78,
-        },
-        "outreach": {
-            "intro_request": """Marcus — Garchomp's CMMC L2 date moved up a quarter. Cillian Murphy is still CISO.
-
-You two sat on the CMMC WG together (score 0.78). Could you offer a 30-min evidence-mapping session?
-
----
-Cillian — heard the L2 date compressed. We just closed a similar OT/IT evidence pack for a peer prime. Happy to share the control-to-artifact map if it saves your team a cycle.
-
-Marcus Cole
-Director, Public Sector Engineering · Fabrikam
----""",
-            "direct_technical": """Cillian — flagging the pulled-forward CMMC L2 milestone against Garchomp's OT/IT program.
-
-Fabrikam national-cloud landing zone + Defender for IoT can produce the evidence artifacts your assessor listed (network diagrams, privileged session logs, SBOM attestation). I can send a redacted sample pack from a peer prime.
-
-Technical review only — no commercial motion until you want it.
-— Fabrikam Commercial AE, Public Sector""",
-        },
-        "mcp_trace": [
-            _trace("14:08:44.100", "compliance_watch", "signals.regulatory", {"framework": "CMMC_L2"}, "OK — deadline pulled forward 1Q"),
-            _trace("14:08:44.322", "lead_enrichment", "graph.get_executive", {"account_id": "garchomp_defense"}, "OK — Cillian Murphy CISO"),
-            _trace("14:08:44.551", "warm_path_bridge", "graph.internal_overlap", {"lead": "cillian_murphy"}, "OK — Marcus Cole · score 0.78"),
-            _trace("14:08:44.803", "evidence_map", "compliance.control_pack", {"level": 2}, "OK — 17 artifacts mapped"),
-            _trace("14:08:45.044", "draft_generation", "llm.compose_outreach", {"voice": "public_sector"}, "OK — drafts staged"),
-        ],
-    },
     "umbreon_finance": {
         "id": "umbreon_finance",
         "name": "Umbreon Finance",
@@ -275,7 +229,65 @@ I can send a 1-pager on tenant isolation and break-glass for clinical apps — e
             _trace("14:14:02.703", "draft_generation", "llm.compose_outreach", {"voice": "partner_eng"}, "OK — drafts staged"),
         ],
     },
+    "metagross_industrial": {
+        "id": "metagross_industrial",
+        "name": "Metagross Industrial",
+        "industry": "Discrete Manufacturing",
+        "size": "4,100 employees · Pre-IPO",
+        "badges": ["🧊 No Warm Path", "Pre-IPO Diligence"],
+        "target_lead": {
+            "name": "Florence Pugh",
+            "title": "CISO",
+            "tenure": "19 days in seat",
+            "previous_role": "CISO at Klinklang Foundries",
+            "focus_areas": ["OT/IT segmentation", "IPO cyber diligence", "Plant-floor identity"],
+        },
+        "warm_path": {
+            "available": False,
+            "internal_contact": None,
+            "internal_title": None,
+            "relationship_overlap": (
+                "No Fabrikam employee has worked with Florence Pugh — not at Klinklang Foundries, "
+                "not on a shared working group, not as a co-author. Do not invent an intro. "
+                "The job now is an AE-owned cold motion: lead with the IPO diligence + OT split, "
+                "send a two-page control map, and keep the first meeting engineer-only."
+            ),
+            "score_label": "NONE",
+            "score": 0.0,
+        },
+        "outreach": {
+            "intro_request": "",
+            "direct_technical": """Florence — congratulations on the CISO seat at Metagross.
+
+Signal we're seeing: pre-IPO cyber diligence is in flight and OT/IT segmentation is on the board pack. There is no internal Fabrikam intro to you, so I am writing directly.
+
+I can send a two-page diligence map (plant-floor identity, privileged session evidence, SBOM attestation) against the questions bankers typically ask at this stage. Technical review only — no commercial motion until you want it.
+
+— Fabrikam Commercial AE, Manufacturing""",
+        },
+        "mcp_trace": [
+            _trace("14:17:28.040", "ipo_watch", "signals.regulatory", {"event": "pre_ipo_diligence"}, "OK — banker cyber questionnaire opened"),
+            _trace("14:17:28.261", "lead_enrichment", "graph.get_executive", {"account_id": "metagross_industrial", "role": "CISO"}, "OK — Florence Pugh · 19d tenure · prev Klinklang Foundries"),
+            _trace("14:17:28.508", "warm_path_bridge", "graph.internal_overlap", {"lead": "florence_pugh", "org": "fabrikam"}, "NONE — 0 employees with prior employment, co-authorship, or working-group overlap"),
+            _trace("14:17:28.741", "second_degree", "graph.mutual_scan", {"lead": "florence_pugh", "depth": 2}, "NONE — no mutual customers or partner engineers on last two roles"),
+            _trace("14:17:28.966", "draft_generation", "llm.compose_outreach", {"voice": "ae_cold_technical", "variants": 1}, "OK — direct_technical only (no forwardable intro)"),
+            _trace("14:17:29.188", "slack_ready", "webhook.preview", {"channel": "#ae-west-signals"}, "READY — cold-path briefing staged"),
+        ],
+    },
 }
+
+
+def has_warm_path(account: dict) -> bool:
+    warm = account.get("warm_path") or {}
+    if warm.get("available") is False:
+        return False
+    contact = (warm.get("internal_contact") or "").strip()
+    score = warm.get("score")
+    if not contact:
+        return False
+    if score is not None and score <= 0:
+        return False
+    return True
 
 
 def account_status(account: dict) -> dict:
@@ -284,6 +296,7 @@ def account_status(account: dict) -> dict:
     account.setdefault("crm_synced", False)
     account.setdefault("crm_synced_at", None)
     account.setdefault("crm_system", None)
+    account["has_warm_path"] = has_warm_path(account)
     return account
 
 
@@ -299,6 +312,7 @@ def account_summary(account: dict) -> dict:
         "target_lead": {"name": lead["name"], "title": lead["title"]},
         "claimed_by": status.get("claimed_by"),
         "crm_synced": status.get("crm_synced", False),
+        "has_warm_path": status.get("has_warm_path", True),
     }
 
 
@@ -376,28 +390,48 @@ def answer_question(account: dict | None, question: str) -> str:
     warm = account["warm_path"]
     badges = ", ".join(account["badges"])
     name = account["name"]
+    warm_available = has_warm_path(account)
 
     if any(word in q for word in ("priorit", "why", "signal", "this week", "badge")):
+        extra = ""
+        if not warm_available:
+            extra = " There is no internal intro — the account is still a priority because the buying signal is live."
         return (
             f"{name} is on this week's shortlist because of {badges}. "
             f"The buying motion sits with {lead['name']}, {lead['title']} ({lead['tenure']}). "
-            f"Previously: {lead['previous_role']}."
+            f"Previously: {lead['previous_role']}.{extra}"
         )
-    if any(word in q for word in ("warm", "intro", "relationship", "path", "connect", "internal")):
-        score = f"{warm['score_label']} ({warm['score']:.2f})"
-        return (
-            f"The warm path is {warm['internal_contact']}, {warm['internal_title']}. "
-            f"Relationship score: {score}. {warm['relationship_overlap']}"
-        )
-    if any(word in q for word in ("send", "outreach", "draft", "email", "first", "message", "slack")):
+    if any(word in q for word in ("send", "outreach", "draft", "email", "first", "message", "slack", "instead", "cold")):
+        if not warm_available:
+            return (
+                f"Do not wait for an intro. Send the direct technical first-touch to {lead['name']} yourself. "
+                f"Lead with the live signal, attach a two-page map on {', '.join(lead['focus_areas'])}, "
+                f"and keep the first meeting engineer-only."
+            )
         return (
             f"Start with the forwardable intro — have {warm['internal_contact']} open the door to {lead['name']}. "
             f"If you need a direct motion, use the technical outreach draft in the briefing. "
             f"Focus areas: {', '.join(lead['focus_areas'])}."
         )
+    if any(word in q for word in ("warm", "intro", "relationship", "path", "connect", "internal")):
+        if not warm_available:
+            return (
+                f"There is no warm path into {name}. Graph scan found 0 Fabrikam employees who worked with "
+                f"{lead['name']} (previously {lead['previous_role']}), on a working group, or as a co-author. "
+                f"{warm['relationship_overlap']}"
+            )
+        score = f"{warm['score_label']} ({warm['score']:.2f})"
+        return (
+            f"The warm path is {warm['internal_contact']}, {warm['internal_title']}. "
+            f"Relationship score: {score}. {warm['relationship_overlap']}"
+        )
+    if warm_available:
+        warm_line = f"Warm path: {warm['internal_contact']} ({warm['score_label']})."
+    else:
+        warm_line = "Warm path: none — send the cold technical draft."
     return (
         f"{name} / {lead['name']}, {lead['title']}. Tenure: {lead['tenure']}. "
-        f"Warm path: {warm['internal_contact']} ({warm['score_label']}). "
+        f"{warm_line} "
         f"Ask about the priority, the warm path, or what to send first for a sharper brief."
     )
 
@@ -414,15 +448,27 @@ def slack_briefing_payload(account: dict, base_url: str) -> dict:
     lead = account["target_lead"]
     warm = account["warm_path"]
     badges = ", ".join(account["badges"])
-    intro = account["outreach"]["intro_request"].strip()
-    if len(intro) > 700:
-        intro = intro[:700].rstrip() + "…"
+    warm_available = has_warm_path(account)
+    draft_key = "intro_request" if warm_available else "direct_technical"
+    draft_label = "Forwardable intro" if warm_available else "Cold technical first-touch"
+    draft = (account["outreach"].get(draft_key) or "").strip()
+    if len(draft) > 700:
+        draft = draft[:700].rstrip() + "…"
     status = account_status(account)
     claim_line = f"Claimed by {status['claimed_by']}" if status.get("claimed_by") else "Unclaimed"
     crm_line = f"Synced to {status.get('crm_system') or CRM_SYSTEM}" if status.get("crm_synced") else "Not in CRM"
+    if warm_available:
+        warm_field = (
+            f"*Warm path*\n{warm['internal_contact']} — {warm['internal_title']}"
+            f" ({warm['score_label']} {warm['score']:.2f})"
+        )
+        warm_summary = f"Warm path: {warm['internal_contact']} ({warm['score_label']})."
+    else:
+        warm_field = "*Warm path*\nNone — 0 internal overlaps"
+        warm_summary = "Warm path: none. Cold technical first-touch staged."
     text = (
         f"SignalScout briefing: {account['name']} — {lead['name']}, {lead['title']}. "
-        f"Warm path: {warm['internal_contact']} ({warm['score_label']})."
+        f"{warm_summary}"
     )
     return {
         "text": text,
@@ -437,20 +483,14 @@ def slack_briefing_payload(account: dict, base_url: str) -> dict:
                     {"type": "mrkdwn", "text": f"*Lead*\n{lead['name']} — {lead['title']}"},
                     {"type": "mrkdwn", "text": f"*Tenure*\n{lead['tenure']}"},
                     {"type": "mrkdwn", "text": f"*Signals*\n{badges}"},
-                    {
-                        "type": "mrkdwn",
-                        "text": (
-                            f"*Warm path*\n{warm['internal_contact']} — {warm['internal_title']}"
-                            f" ({warm['score_label']} {warm['score']:.2f})"
-                        ),
-                    },
+                    {"type": "mrkdwn", "text": warm_field},
                     {"type": "mrkdwn", "text": f"*Ownership*\n{claim_line}"},
                     {"type": "mrkdwn", "text": f"*CRM*\n{crm_line}"},
                 ],
             },
             {"type": "section", "text": {"type": "mrkdwn", "text": f"*Context*\n{warm['relationship_overlap']}"}},
             {"type": "divider"},
-            {"type": "section", "text": {"type": "mrkdwn", "text": f"*Forwardable intro*\n```{intro}```"}},
+            {"type": "section", "text": {"type": "mrkdwn", "text": f"*{draft_label}*\n```{draft}```"}},
             slack_action_buttons(account["id"], base_url),
             {
                 "type": "context",

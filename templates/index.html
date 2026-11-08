@@ -14,7 +14,8 @@
   <body>
     <header class="site-header">
       <nav class="wrap nav" aria-label="Main navigation">
-        <a class="brand" href="/" aria-label="SignalScout home"><span class="brand-icon" aria-hidden="true">✳</span><span>signal<span class="brand-light">scout</span><span class="brand-period">.</span></span></a>
+        {% set brand_href = "/" %}
+        {% include "brand.html" %}
         <div class="nav-right">
           {% include "theme-toggle.html" %}
           <a class="button button-primary" href="#login">Sign in <span aria-hidden="true">↗</span></a>
@@ -50,7 +51,7 @@
           <div class="login-intro">
             <p class="eyebrow"><span class="eyebrow-line"></span> YOUR WORKSPACE AWAITS</p>
             <h2>Less digging.<br /><span class="accent-text">More doing.</span></h2>
-            <p>Five accounts worth your week, with the context and outreach ready when you are.</p>
+            <p>A shortlist worth your week, with the context and outreach ready — even when there is no warm intro.</p>
             <div class="login-note mono">IDENTIFY &nbsp; → &nbsp; PRIORITIZE &nbsp; → &nbsp; CONNECT</div>
           </div>
           <div class="login-card">
@@ -69,7 +70,7 @@
         </div>
       </section>
     </main>
-    <footer class="footer"><div class="wrap footer-inner"><span class="brand">signal<span class="brand-light">scout</span><span class="brand-period">.</span></span><span class="mono">BUILT FOR THE MOMENT THAT MATTERS. © FABRIKAM</span></div></footer>
+    <footer class="footer"><div class="wrap footer-inner">{% set brand_href = "/" %}{% include "brand.html" %}<span class="mono">BUILT FOR THE MOMENT THAT MATTERS. © FABRIKAM</span></div></footer>
     <script>
       document.getElementById("login-form").addEventListener("submit", (event) => {
         event.preventDefault();

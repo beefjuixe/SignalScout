@@ -18,7 +18,8 @@
     <div id="toast-root" class="toasts" role="status" aria-live="polite"></div>
     <header class="site-header">
       <nav class="wrap nav" aria-label="Workspace navigation">
-        <a class="brand" href="/dashboard"><span class="brand-icon" aria-hidden="true">✳</span><span>signal<span class="brand-light">scout</span><span class="brand-period">.</span></span></a>
+        {% set brand_href = "/dashboard" %}
+        {% include "brand.html" %}
         <div class="nav-right">
           {% include "theme-toggle.html" %}
           <button id="digest-scheduler-btn" type="button" class="button button-outline header-schedule-icon" aria-label="Schedule digest" title="Schedule digest" aria-haspopup="dialog" aria-controls="digest-scheduler">
@@ -39,7 +40,7 @@
           <div>
             <p class="eyebrow"><span class="eyebrow-line"></span> FABRIKAM / COMMERCIAL AE TERRITORY</p>
             <h1>Your week, <span class="accent-text">in focus.</span></h1>
-            <p>Five accounts worth your attention. Every signal has a next step.</p>
+            <p>Your shortlist this week. Every signal has a next step — including accounts with no warm intro.</p>
           </div>
           <div class="dashboard-meta mono">WORKSPACE / <span id="current-user"></span><strong>TOP <span id="top-count">—</span></strong>PRIORITY ACCOUNTS</div>
         </div>
@@ -47,9 +48,9 @@
 
       <div class="wrap">
         <div class="dashboard-stats" aria-label="Territory overview">
-          <div><strong>12,480</strong><span>ACCOUNTS MONITORED</span></div>
+          <div><strong>150</strong><span>ACCOUNTS MONITORED</span></div>
           <div><strong id="priority-count">—</strong><span>PRIORITIES THIS WEEK</span></div>
-          <div><strong>48,920</strong><span>SIGNALS ANALYZED</span></div>
+          <div><strong>1,200</strong><span>SIGNALS EVALUATED THIS WEEK</span></div>
         </div>
       </div>
 
@@ -78,8 +79,8 @@
               <p class="label muted">PRIORITY SIGNALS</p>
               <div id="account-signals" class="lead-focus"></div>
             </section>
-            <article class="section bridge">
-              <p class="label muted">THE WARM WAY IN</p>
+            <article class="section bridge" id="warm-section">
+              <p class="label muted" id="warm-label">THE WARM WAY IN</p>
               <h3 id="warm-contact" class="bridge-contact">—</h3>
               <p id="warm-title" class="bridge-role"></p>
               <p id="warm-overlap" class="bridge-overlap"></p>
@@ -115,7 +116,7 @@
               <div id="chat-prompts" class="chat-prompts">
                 <p class="chat-suggestions-label label muted">SUGGESTED QUESTIONS</p>
                 <button type="button" class="chat-prompt" data-prompt="Why is this account a priority this week?">Why is this account a priority this week?</button>
-                <button type="button" class="chat-prompt" data-prompt="Who is the warm path, and how strong is the relationship?">Who is the warm path, and how strong is the relationship?</button>
+                <button type="button" class="chat-prompt" id="chat-prompt-warm" data-prompt="Who is the warm path, and how strong is the relationship?">Who is the warm path, and how strong is the relationship?</button>
               </div>
             </div>
             <form id="chat-form" class="chat-form">
@@ -219,7 +220,7 @@
         <div id="mcp-trace" class="trace-panel is-collapsed" hidden></div>
       </div>
     </section>
-    <footer class="footer"><div class="wrap footer-inner"><span class="brand">signal<span class="brand-light">scout</span><span class="brand-period">.</span></span><span class="mono">FABRIKAM / 12,480 MONITORED ACCOUNTS</span></div></footer>
+    <footer class="footer"><div class="wrap footer-inner">{% set brand_href = "/dashboard" %}{% include "brand.html" %}<span class="mono">FABRIKAM / 150 MONITORED ACCOUNTS</span></div></footer>
 
     <script>
       const state = {
@@ -316,6 +317,7 @@
                 </div>
                 <p class="account-meta">${escapeHtml(account.industry)} · ${escapeHtml(account.size)}</p>
                 <p class="account-lead"><span class="person-line"><strong>${escapeHtml(leadName)}</strong>${linkedInLink(leadName)}</span> — ${escapeHtml(account.target_lead?.title || "")}</p>
+                ${account.has_warm_path === false ? `<p class="account-meta">No warm path</p>` : ""}
               </div>
             `;
           })
@@ -350,10 +352,25 @@
           .map((badge) => `<span class="tag tag-quiet">${escapeHtml(badge.replace(/^\p{Extended_Pictographic}\uFE0F?\s*/u, ""))}</span>`)
           .join("");
         const warm = detail.warm_path || {};
-        const warmName = warm.internal_contact || "—";
-        els.warmContact.innerHTML = `<span class="bridge-name">${escapeHtml(warmName)}</span>${linkedInLink(warmName)}`;
-        els.warmTitle.textContent = warm.internal_title || "";
+        const hasWarm = detail.has_warm_path !== false && Boolean(warm.internal_contact);
+        const warmSection = document.getElementById("warm-section");
+        const introTab = document.getElementById("tab-intro");
+        document.getElementById("warm-label").textContent = hasWarm ? "THE WARM WAY IN" : "NO WARM PATH";
+        warmSection.classList.toggle("is-cold", !hasWarm);
+        if (hasWarm) {
+          const warmName = warm.internal_contact;
+          els.warmContact.innerHTML = `<span class="bridge-name">${escapeHtml(warmName)}</span>${linkedInLink(warmName)}`;
+          els.warmTitle.textContent = warm.internal_title || "";
+        } else {
+          els.warmContact.innerHTML = `<span class="bridge-name">No internal overlap</span><span class="tag tag-quiet">Score 0.00</span>`;
+          els.warmTitle.textContent = "Graph scanned Fabrikam employees, prior employers, and working groups.";
+        }
         els.warmOverlap.textContent = warm.relationship_overlap || "";
+        introTab.hidden = !hasWarm;
+        if (!hasWarm) {
+          state.outreachTab = "direct_technical";
+          setActiveTab("direct_technical");
+        }
         els.outreachCopy.textContent = detail.outreach?.[state.outreachTab] || "";
         const status = document.getElementById("account-status");
         const tags = [];
@@ -386,6 +403,7 @@
         state.detail = null;
         state.outreachTab = "intro_request";
         setActiveTab("intro_request");
+        document.getElementById("tab-intro").hidden = false;
         renderAccountCards();
         setLoading(true);
         try {
@@ -559,6 +577,15 @@
 
       function resetChat(detail) {
         const prompts = document.getElementById("chat-prompts");
+        const warmPrompt = document.getElementById("chat-prompt-warm");
+        const hasWarm = detail?.has_warm_path !== false && Boolean(detail?.warm_path?.internal_contact);
+        if (hasWarm) {
+          warmPrompt.dataset.prompt = "Who is the warm path, and how strong is the relationship?";
+          warmPrompt.textContent = "Who is the warm path, and how strong is the relationship?";
+        } else {
+          warmPrompt.dataset.prompt = "There is no warm path — what should I do instead?";
+          warmPrompt.textContent = "There is no warm path — what should I do instead?";
+        }
         els.chatLog.innerHTML = "";
         prompts.hidden = false;
         els.chatLog.appendChild(prompts);

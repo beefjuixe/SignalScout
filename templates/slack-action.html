@@ -14,7 +14,8 @@
   <body class="grid-paper">
     <header class="site-header">
       <nav class="wrap nav" aria-label="Main navigation">
-        <a class="brand" href="/dashboard"><span class="brand-icon" aria-hidden="true">✳</span><span>signal<span class="brand-light">scout</span><span class="brand-period">.</span></span></a>
+        {% set brand_href = "/dashboard" %}
+        {% include "brand.html" %}
         <div class="nav-right">{% include "theme-toggle.html" %}</div>
       </nav>
     </header>
